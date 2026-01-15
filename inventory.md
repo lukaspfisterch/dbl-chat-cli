@@ -66,6 +66,16 @@ Thin, deterministic CLI client for `dbl-gateway`.
 - Sends `POST /ingress/intent` with `intent_type=chat.message`.
 - No policy logic, no provider SDKs, no persistence.
 
+## Installation
+
+Clone the repository and install:
+
+```bash
+git clone https://github.com/lukaspfisterch/dbl-chat-cli.git
+cd dbl-chat-cli
+pip install -e .
+```
+
 ## Usage
 
 ```bash

@@ -1,6 +1,6 @@
 # dbl-chat-cli
 
-Thin, deterministic CLI client for `dbl-gateway`.
+Thin, deterministic CLI client for [deterministic-ai-gateway](https://github.com/lukaspfisterch/deterministic-ai-gateway).
 
 ## What it does
 

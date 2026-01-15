@@ -1,15 +1,21 @@
-# Inventory
+# Inventory: dbl-chat-cli
 
 ## Tree
 
-- .gitignore
-- pyproject.toml
-- README.md
-- src/dbl_chat_cli/__init__.py
-- src/dbl_chat_cli/__main__.py
-- src/dbl_chat_cli/client.py
-- src/dbl_chat_cli/gateway_api.py
-- src/dbl_chat_cli/repl.py
+```
+.gitignore
+README.md
+pyproject.toml
+  src/
+    dbl_chat_cli/
+      __init__.py
+      __main__.py
+      client.py
+      gateway_api.py
+      repl.py
+```
+
+## File Contents
 
 ### .gitignore
 
@@ -22,38 +28,9 @@ dist/
 build/
 ```
 
-### pyproject.toml
-
-```
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "dbl-chat-cli"
-version = "0.1.0"
-description = "CLI chat client for dbl-gateway"
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-  "httpx>=0.27.0",
-  "prompt_toolkit>=3.0.43",
-]
-
-[project.scripts]
-dbl-chat-cli = "dbl_chat_cli.__main__:main"
-
-[tool.setuptools]
-package-dir = { "" = "src" }
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["dbl_chat_cli*"]
-```
-
 ### README.md
 
-```
+```markdown
 # dbl-chat-cli
 
 Thin, deterministic CLI client for `dbl-gateway`.
@@ -82,6 +59,12 @@ pip install -e .
 python -m dbl_chat_cli --base-url http://127.0.0.1:8010
 ```
 
+powershell
+python -m dbl_chat_cli `
+  --base-url http://127.0.0.1:8010 `
+  --principal-id user-1
+
+
 Optional flags:
 - `--model-id` (default: first model from capabilities)
 - `--provider` (optional override)
@@ -104,15 +87,44 @@ Optional flags:
 - No retries without backoff.
 ```
 
-### src/dbl_chat_cli/__init__.py
+### pyproject.toml
 
+```toml
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbl-chat-cli"
+version = "0.1.0"
+description = "CLI chat client for dbl-gateway"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27.0",
+  "prompt_toolkit>=3.0.43",
+]
+
+[project.scripts]
+dbl-chat-cli = "dbl_chat_cli.__main__:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dbl_chat_cli*"]
 ```
+
+### src\dbl_chat_cli\__init__.py
+
+```python
 __all__ = []
 ```
 
-### src/dbl_chat_cli/__main__.py
+### src\dbl_chat_cli\__main__.py
 
-```
+```python
 from __future__ import annotations
 
 import argparse
@@ -188,9 +200,9 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-### src/dbl_chat_cli/client.py
+### src\dbl_chat_cli\client.py
 
-```
+```python
 from __future__ import annotations
 
 import time
@@ -357,9 +369,9 @@ def _extract_response(event: dict[str, Any], correlation_id: str) -> Optional[st
     return None
 ```
 
-### src/dbl_chat_cli/gateway_api.py
+### src\dbl_chat_cli\gateway_api.py
 
-```
+```python
 from __future__ import annotations
 
 import json
@@ -432,9 +444,9 @@ class GatewayAPI:
                     data_lines.append(text[5:].lstrip())
 ```
 
-### src/dbl_chat_cli/repl.py
+### src\dbl_chat_cli\repl.py
 
-```
+```python
 from __future__ import annotations
 
 from dataclasses import dataclass

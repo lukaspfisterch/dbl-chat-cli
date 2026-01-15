@@ -16,6 +16,12 @@ Thin, deterministic CLI client for `dbl-gateway`.
 python -m dbl_chat_cli --base-url http://127.0.0.1:8010
 ```
 
+powershell
+python -m dbl_chat_cli `
+  --base-url http://127.0.0.1:8010 `
+  --principal-id user-1
+
+
 Optional flags:
 - `--model-id` (default: first model from capabilities)
 - `--provider` (optional override)

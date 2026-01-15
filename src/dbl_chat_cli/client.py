@@ -29,6 +29,8 @@ class ChatClient:
         self._caps = caps
         self._offset = 0
         self._last_index = -1
+        self._thread_id = str(uuid.uuid4())
+        self._last_turn_id: str | Optional[str] = None
 
     @property
     def config(self) -> ClientConfig:
@@ -48,6 +50,7 @@ class ChatClient:
 
     def send_message(self, message: str) -> dict[str, Any]:
         correlation_id = str(uuid.uuid4())
+        turn_id = str(uuid.uuid4())
         input_bytes = len(message.encode("utf-8"))
         input_chars = len(message)
         inputs = {
@@ -64,13 +67,16 @@ class ChatClient:
         inputs = {k: v for k, v in inputs.items() if v is not None}
 
         envelope = {
-            "interface_version": 1,
+            "interface_version": 2,
             "correlation_id": correlation_id,
             "payload": {
                 "stream_id": "default",
                 "lane": self._config.lane,
                 "actor": "dbl-chat-cli",
                 "intent_type": "chat.message",
+                "thread_id": self._thread_id,
+                "turn_id": turn_id,
+                "parent_turn_id": self._last_turn_id,
                 "payload": {
                     "message": message,
                 },
@@ -78,6 +84,7 @@ class ChatClient:
                 "requested_model_id": self._config.model_id,
             },
         }
+        self._last_turn_id = turn_id
         ack = self._api.post_intent(envelope)
         return {"correlation_id": correlation_id, "ack": ack}
 

@@ -5,12 +5,6 @@
 - .gitignore
 - pyproject.toml
 - README.md
-- src/dbl_chat_cli.egg-info/dependency_links.txt
-- src/dbl_chat_cli.egg-info/entry_points.txt
-- src/dbl_chat_cli.egg-info/PKG-INFO
-- src/dbl_chat_cli.egg-info/requires.txt
-- src/dbl_chat_cli.egg-info/SOURCES.txt
-- src/dbl_chat_cli.egg-info/top_level.txt
 - src/dbl_chat_cli/__init__.py
 - src/dbl_chat_cli/__main__.py
 - src/dbl_chat_cli/client.py
@@ -20,40 +14,12 @@
 ### .gitignore
 
 ```
-# OS / editor
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
 .venv/
-venv/
-env/
-.env/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.tox/
-.nox/
-
-# Node
-node_modules/
-.next/
+__pycache__/
+*.pyc
+*.egg-info/
 dist/
 build/
-
-# General
-*.log
-*.tmp
-*.bak
-coverage/
-.coverage
-coverage.xml
-inventory.md
 ```
 
 ### pyproject.toml
@@ -126,101 +92,6 @@ Optional flags:
 - No governance, policy, or provider logic.
 - No memory or tools.
 - No retries without backoff.
-```
-
-### src/dbl_chat_cli.egg-info/dependency_links.txt
-
-```
-
-```
-
-### src/dbl_chat_cli.egg-info/entry_points.txt
-
-```
-[console_scripts]
-dbl-chat-cli = dbl_chat_cli.__main__:main
-```
-
-### src/dbl_chat_cli.egg-info/PKG-INFO
-
-```
-Metadata-Version: 2.4
-Name: dbl-chat-cli
-Version: 0.1.0
-Summary: CLI chat client for dbl-gateway
-Requires-Python: >=3.11
-Description-Content-Type: text/markdown
-Requires-Dist: httpx>=0.27.0
-Requires-Dist: prompt_toolkit>=3.0.43
-
-# dbl-chat-cli
-
-Thin, deterministic CLI client for `dbl-gateway`.
-
-## What it does
-
-- Connects to `dbl-gateway` over HTTP only.
-- Calls `GET /capabilities` on startup.
-- Uses `/tail` if advertised, otherwise polls `/snapshot` with backoff.
-- Sends `POST /ingress/intent` with `intent_type=chat.message`.
-- No policy logic, no provider SDKs, no persistence.
-
-## Usage
-
-```bash
-python -m dbl_chat_cli --base-url http://127.0.0.1:8010
-```
-
-Optional flags:
-- `--model-id` (default: first model from capabilities)
-- `--provider` (optional override)
-- `--max-output-tokens`
-- `--principal-id` (required)
-- `--workspace-id` (optional)
-
-## Controls
-
-- Multiline input
-- `Ctrl+Enter` to send
-- `Ctrl+C` cancels current wait (does not exit)
-- `Ctrl+D` exits
-
-## Limitations by design
-
-- No governance, policy, or provider logic.
-- No memory or tools.
-- No retries without backoff.
-```
-
-### src/dbl_chat_cli.egg-info/requires.txt
-
-```
-httpx>=0.27.0
-prompt_toolkit>=3.0.43
-```
-
-### src/dbl_chat_cli.egg-info/SOURCES.txt
-
-```
-README.md
-pyproject.toml
-src/dbl_chat_cli/__init__.py
-src/dbl_chat_cli/__main__.py
-src/dbl_chat_cli/client.py
-src/dbl_chat_cli/gateway_api.py
-src/dbl_chat_cli/repl.py
-src/dbl_chat_cli.egg-info/PKG-INFO
-src/dbl_chat_cli.egg-info/SOURCES.txt
-src/dbl_chat_cli.egg-info/dependency_links.txt
-src/dbl_chat_cli.egg-info/entry_points.txt
-src/dbl_chat_cli.egg-info/requires.txt
-src/dbl_chat_cli.egg-info/top_level.txt
-```
-
-### src/dbl_chat_cli.egg-info/top_level.txt
-
-```
-dbl_chat_cli
 ```
 
 ### src/dbl_chat_cli/__init__.py
@@ -341,6 +212,8 @@ class ChatClient:
         self._caps = caps
         self._offset = 0
         self._last_index = -1
+        self._thread_id = str(uuid.uuid4())
+        self._last_turn_id: str | Optional[str] = None
 
     @property
     def config(self) -> ClientConfig:
@@ -360,6 +233,7 @@ class ChatClient:
 
     def send_message(self, message: str) -> dict[str, Any]:
         correlation_id = str(uuid.uuid4())
+        turn_id = str(uuid.uuid4())
         input_bytes = len(message.encode("utf-8"))
         input_chars = len(message)
         inputs = {
@@ -376,13 +250,16 @@ class ChatClient:
         inputs = {k: v for k, v in inputs.items() if v is not None}
 
         envelope = {
-            "interface_version": 1,
+            "interface_version": 2,
             "correlation_id": correlation_id,
             "payload": {
                 "stream_id": "default",
                 "lane": self._config.lane,
                 "actor": "dbl-chat-cli",
                 "intent_type": "chat.message",
+                "thread_id": self._thread_id,
+                "turn_id": turn_id,
+                "parent_turn_id": self._last_turn_id,
                 "payload": {
                     "message": message,
                 },
@@ -390,6 +267,7 @@ class ChatClient:
                 "requested_model_id": self._config.model_id,
             },
         }
+        self._last_turn_id = turn_id
         ack = self._api.post_intent(envelope)
         return {"correlation_id": correlation_id, "ack": ack}
 
